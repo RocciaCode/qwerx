@@ -1,0 +1,73 @@
+name: Qwerx CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  JAVA_VERSION: '21'
+  NODE_VERSION: '20'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: qwerxdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: 📦 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: ☕ Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: 🌐 Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: 🧰 Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven-
+
+      - name: 🛠️ Build backend (Spring Boot)
+        working-directory: ./qwerx-backend
+        run: mvn clean install -DskipTests
+
+      - name: 🧱 Build frontend (Angular)
+        working-directory: ./qwerx-frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: 🧪 Run backend tests
+        working-directory: ./qwerx-backend
+        run: mvn test
+
+      - name: 🐳 Build Docker images
+        run: docker-compose -f ./infrastructure/docker-compose.yml build
+
+      - name: 🚀 Run Docker Compose
+        run: docker-compose -f ./infrastructure/docker-compose.yml up -d

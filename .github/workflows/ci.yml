@@ -33,7 +33,7 @@ jobs:
       - name: 📢 Notify Discord - Pipeline Started
         run: |
           curl -X POST -H "Content-Type: application/json" \
-          -d '{"content": "🔄 The pipeline for Qwerx has started!"}' \
+          -d '{"content": "🚀 Pipeline for Qwerx started on branch `${{ github.ref_name }}`"}' \
           ${{ secrets.DISCORD_WEBHOOK_URL }}
 
       - name: 📦 Checkout repository
@@ -53,50 +53,52 @@ jobs:
       - name: 🧰 Cache Maven dependencies
         uses: actions/cache@v4
         with:
-          path: |
-            ~/.m2/repository
+          path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-maven-
 
       - name: 🛠️ Build backend (Spring Boot)
         working-directory: ./qwerx-backend
-        run: mvn clean install -DskipTests
+        run: mvn clean install -DskipTests | tee $GITHUB_WORKSPACE/qwerx-error.log
 
-      - name: 🧱 Build frontend (Angular for GitHub Pages)
+      - name: 🧱 Build frontend (Angular)
         working-directory: ./qwerx-frontend
         run: |
-          npm ci
-          npm run build -- --base-href /qwerx-frontend/
+          npm ci | tee -a $GITHUB_WORKSPACE/qwerx-error.log
+          npm run build -- --base-href /qwerx-frontend/ | tee -a $GITHUB_WORKSPACE/qwerx-error.log
 
       - name: 🧪 Run backend tests
         working-directory: ./qwerx-backend
-        run: mvn test
+        run: mvn test | tee -a $GITHUB_WORKSPACE/qwerx-error.log
 
-      - name: 🐳 Install Docker Compose v2 manually
+      - name: 🐳 Install Docker Compose (manual fallback)
         run: |
-          mkdir -p ~/.docker/cli-plugins/
-          curl -SL https://github.com/docker/compose/releases/download/v2.27.0/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
-          chmod +x ~/.docker/cli-plugins/docker-compose
-          docker compose version
-          
+          sudo curl -SL https://github.com/docker/compose/releases/download/v2.22.0/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose --version
+
       - name: 🐳 Build Docker images
-        run: docker-compose -f ./qwerx-infra/docker-compose.yml build
+        run: docker-compose -f ./qwerx-infra/docker-compose.yml build | tee -a $GITHUB_WORKSPACE/qwerx-error.log
 
       - name: 🚀 Run Docker Compose
-        run: docker-compose -f ./qwerx-infra/docker-compose.yml up -d
+        run: docker-compose -f ./qwerx-infra/docker-compose.yml up -d | tee -a $GITHUB_WORKSPACE/qwerx-error.log
 
       - name: 📢 Notify Discord on success
         if: success()
         run: |
           curl -X POST -H "Content-Type: application/json" \
-          -d '{"content": "✅ Build and deploy completed successfully for the Qwerx project!"}' \
+          -d '{"content": "✅ Qwerx pipeline completed **successfully** on branch `${{ github.ref_name }}`!"}' \
           ${{ secrets.DISCORD_WEBHOOK_URL }}
 
-      - name: 📢 Notify Discord on failure
+      - name: 📢 Notify Discord on failure with logs
         if: failure()
         run: |
+          echo "❌ Qwerx pipeline failed on branch `${{ github.ref_name }}`!" > err.log
+          echo "🔍 Last 10 lines of log:" >> err.log
+          tail -n 10 $GITHUB_WORKSPACE/qwerx-error.log >> err.log
+          CONTENT=$(jq -Rs . < err.log)
           curl -X POST -H "Content-Type: application/json" \
-          -d '{"content": "❌ Build and deploy failed for the Qwerx project!"}' \
+          -d "{\"content\": $CONTENT}" \
           ${{ secrets.DISCORD_WEBHOOK_URL }}
 
       - name: 🚀 Deploy demo to GitHub Pages

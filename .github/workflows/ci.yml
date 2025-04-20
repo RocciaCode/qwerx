@@ -66,11 +66,7 @@ jobs:
         run: |
           npm ci | tee -a $GITHUB_WORKSPACE/qwerx-error.log
           npm run build -- --base-href /qwerx-frontend/ | tee -a $GITHUB_WORKSPACE/qwerx-error.log
-
-      - name: 🧱 Build frontend (Angular) for GitHub Pages
-        run: |
-            npm ci
-            npm run build:pages
+          npm run build:pages
 
       - name: 🧪 Run backend tests
         working-directory: ./qwerx-backend

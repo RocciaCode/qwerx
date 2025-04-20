@@ -30,6 +30,12 @@ jobs:
           --health-retries 5
 
     steps:
+    # Notify Discord about the pipeline start
+      - name: 📢 Notify Discord - Pipeline Started
+        run: |
+          curl -X POST -H "Content-Type: application/json" \
+          -d '{"content": "The pipeline for Qwerx has started!"}' \
+          ${{ secrets.DISCORD_WEBHOOK_URL }}
       - name: 📦 Checkout repository
         uses: actions/checkout@v4
 

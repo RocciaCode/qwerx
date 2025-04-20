@@ -74,7 +74,7 @@ jobs:
           docker-compose --version
 
       - name: 🐳 Build Docker images
-        run: docker-compose -f ./infrastructure/docker-compose.yml build
+        run: docker-compose -f ./qwerx-infra/docker-compose.yml build
 
       - name: 🚀 Run Docker Compose
-        run: docker-compose -f ./infrastructure/docker-compose.yml up -d
+        run: docker-compose -f ./qwerx-infra/docker-compose.yml up -d

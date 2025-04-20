@@ -10,6 +10,7 @@ on:
 env:
   JAVA_VERSION: '21'
   NODE_VERSION: '20'
+  DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
 
 jobs:
   build:
@@ -66,15 +67,15 @@ jobs:
         working-directory: ./qwerx-backend
         run: mvn test
 
-      # Install Docker Compose
-      - name: Install Docker Compose
-        run: |
-          sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
-          docker-compose --version
-
       - name: 🐳 Build Docker images
-        run: docker-compose -f ./qwerx-infra/docker-compose.yml build
+        run: docker-compose -f ./infrastructure/docker-compose.yml build
 
       - name: 🚀 Run Docker Compose
-        run: docker-compose -f ./qwerx-infra/docker-compose.yml up -d
+        run: docker-compose -f ./infrastructure/docker-compose.yml up -d
+
+      # Send notification to Discord
+      - name: 📢 Notify Discord
+        run: |
+          curl -X POST -H "Content-Type: application/json" \
+          -d '{"content": "Build and deploy completed successfully for the Qwerx project!"}' \
+          ${{ secrets.DISCORD_WEBHOOK_URL }}

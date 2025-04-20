@@ -66,11 +66,7 @@ jobs:
         run: |
           npm ci | tee -a $GITHUB_WORKSPACE/qwerx-error.log
           npm run build -- --base-href /qwerx-frontend/ | tee -a $GITHUB_WORKSPACE/qwerx-error.log
-
-      - name: 🛠️ Build Angular static pages
-        working-directory: ./qwerx-frontend
-        run: npm run build:pages
-
+ 
       - name: 🧪 Run backend tests
         working-directory: ./qwerx-backend
         run: mvn test | tee -a $GITHUB_WORKSPACE/qwerx-error.log
@@ -104,24 +100,4 @@ jobs:
               github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
           }
 
-      - name: 🚀 Deploy demo to GitHub Pages
-        if: github.ref == 'refs/heads/dev'
-        run: |
-          git config --global user.name 'github-actions'
-          git config --global user.email 'actions@github.com'
 
-          mkdir temp-pages
-          cp -r ./qwerx-frontend/dist/qwerx-frontend/* temp-pages/
-
-          git checkout --orphan gh-pages
-          git reset --hard
-          git clean -fdx
-
-          cp -r temp-pages/* .
-          rm -rf temp-pages
-
-          touch .nojekyll
-
-          git add .
-          git commit -m "Deploy demo to GitHub Pages"
-          git push origin gh-pages --force

@@ -72,6 +72,12 @@ jobs:
         working-directory: ./qwerx-backend
         run: mvn test
 
+      - name: 🐳 Set up Docker Compose v2
+        run: |
+          sudo apt-get update
+          sudo apt-get install docker-compose-plugin -y
+          docker compose version
+
       - name: 🐳 Build Docker images
         run: docker-compose -f ./qwerx-infra/docker-compose.yml build
 

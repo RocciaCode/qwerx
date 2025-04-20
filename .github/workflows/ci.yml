@@ -78,9 +78,19 @@ jobs:
 
       - name: 🚀 Run Docker Compose
         run: docker-compose -f ./qwerx-infra/docker-compose.yml up -d
-      # Send notification to Discord
-      - name: 📢 Notify Discord
+
+      # Send success notification to Discord
+      - name: 📢 Notify Discord on success
+        if: success()  # This ensures notification is sent on success
         run: |
           curl -X POST -H "Content-Type: application/json" \
           -d '{"content": "Build and deploy completed successfully for the Qwerx project!"}' \
+          ${{ secrets.DISCORD_WEBHOOK_URL }}
+
+      # Send failure notification to Discord
+      - name: 📢 Notify Discord on failure
+        if: failure()  # This ensures notification is sent on failure
+        run: |
+          curl -X POST -H "Content-Type: application/json" \
+          -d '{"content": "Build and deploy failed for the Qwerx project!"}' \
           ${{ secrets.DISCORD_WEBHOOK_URL }}

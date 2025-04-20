@@ -101,16 +101,24 @@ jobs:
           -d '{"content": "Build and deploy failed for the Qwerx project!"}' \
           ${{ secrets.DISCORD_WEBHOOK_URL }}
             # Deploy to GitHub Pages
-      - name: 📄 Deploy to GitHub Pages
+      - name: 🚀 Deploy demo to GitHub Pages
+        if: github.ref == 'refs/heads/main'
         run: |
-          git config --global user.email "fabio.baldi1995@gmail.com"
-          git config --global user.name "fabio.baldi"
-          git remote set-url origin https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          git config --global user.name 'github-actions'
+          git config --global user.email 'actions@github.com'
+
+          mkdir temp-pages
+          cp -r ./qwerx-frontend/dist/qwerx-frontend/* temp-pages/
+
           git checkout --orphan gh-pages
           git reset --hard
-          cp -r ./qwerx-frontend/dist/* .
+          git clean -fdx
+
+          cp -r temp-pages/* .
+          rm -rf temp-pages
+
+          touch .nojekyll
+
           git add .
           git commit -m "Deploy demo to GitHub Pages"
           git push origin gh-pages --force
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

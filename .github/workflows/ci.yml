@@ -30,12 +30,12 @@ jobs:
           --health-retries 5
 
     steps:
-    # Notify Discord about the pipeline start
       - name: 📢 Notify Discord - Pipeline Started
         run: |
           curl -X POST -H "Content-Type: application/json" \
-          -d '{"content": "The pipeline for Qwerx has started!"}' \
+          -d '{"content": "🔄 The pipeline for Qwerx has started!"}' \
           ${{ secrets.DISCORD_WEBHOOK_URL }}
+
       - name: 📦 Checkout repository
         uses: actions/checkout@v4
 
@@ -62,22 +62,15 @@ jobs:
         working-directory: ./qwerx-backend
         run: mvn clean install -DskipTests
 
-      - name: 🧱 Build frontend (Angular)
+      - name: 🧱 Build frontend (Angular for GitHub Pages)
         working-directory: ./qwerx-frontend
         run: |
           npm ci
-          npm run build
+          npm run build -- --base-href /qwerx-frontend/
 
       - name: 🧪 Run backend tests
         working-directory: ./qwerx-backend
         run: mvn test
-
-      # Install Docker Compose
-      - name: Install Docker Compose
-        run: |
-          sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
-          docker-compose --version
 
       - name: 🐳 Build Docker images
         run: docker-compose -f ./qwerx-infra/docker-compose.yml build
@@ -85,22 +78,20 @@ jobs:
       - name: 🚀 Run Docker Compose
         run: docker-compose -f ./qwerx-infra/docker-compose.yml up -d
 
-      # Send success notification to Discord
       - name: 📢 Notify Discord on success
-        if: success()  # This ensures notification is sent on success
+        if: success()
         run: |
           curl -X POST -H "Content-Type: application/json" \
-          -d '{"content": "Build and deploy completed successfully for the Qwerx project!"}' \
+          -d '{"content": "✅ Build and deploy completed successfully for the Qwerx project!"}' \
           ${{ secrets.DISCORD_WEBHOOK_URL }}
 
-      # Send failure notification to Discord
       - name: 📢 Notify Discord on failure
-        if: failure()  # This ensures notification is sent on failure
+        if: failure()
         run: |
           curl -X POST -H "Content-Type: application/json" \
-          -d '{"content": "Build and deploy failed for the Qwerx project!"}' \
+          -d '{"content": "❌ Build and deploy failed for the Qwerx project!"}' \
           ${{ secrets.DISCORD_WEBHOOK_URL }}
-            # Deploy to GitHub Pages
+
       - name: 🚀 Deploy demo to GitHub Pages
         if: github.ref == 'refs/heads/main'
         run: |

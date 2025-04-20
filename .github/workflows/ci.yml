@@ -91,16 +91,15 @@ jobs:
           -d '{"content": "✅ Qwerx pipeline completed **successfully** on branch `${{ github.ref_name }}`!"}' \
           ${{ secrets.DISCORD_WEBHOOK_URL }}
 
-      - name: 📢 Notify Discord on failure with logs
+      - name: 📢 Notify Discord on failure
         if: failure()
         run: |
-          echo "❌ Qwerx pipeline failed on branch `${{ github.ref_name }}`!" > err.log
-          echo "🔍 Last 10 lines of log:" >> err.log
-          tail -n 10 $GITHUB_WORKSPACE/qwerx-error.log >> err.log
-          CONTENT=$(jq -Rs . < err.log)
           curl -X POST -H "Content-Type: application/json" \
-          -d "{\"content\": $CONTENT}" \
-          ${{ secrets.DISCORD_WEBHOOK_URL }}
+          -d @- ${{ secrets.DISCORD_WEBHOOK_URL }} <<EOF
+          {
+            "content": "❌ **Qwerx Pipeline Failed!**\n🔗 [View Run on GitHub](${{
+              github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+          }
 
       - name: 🚀 Deploy demo to GitHub Pages
         if: github.ref == 'refs/heads/main'
